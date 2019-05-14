@@ -54,13 +54,6 @@ namespace randr_util {
   }
 
   /**
-   * Check for XRandR monitor support
-   */
-  bool check_monitor_support() {
-    return WITH_XRANDR_MONITORS && g_major_version >= 1 && g_minor_version >= 5;
-  }
-
-  /**
    * Define monitor
    */
   monitor_t make_monitor(
@@ -89,18 +82,6 @@ namespace randr_util {
       return monitors;
     }
 
-#if WITH_XRANDR_MONITORS
-    if (check_monitor_support()) {
-      for (auto&& mon : conn.get_monitors(root, true).monitors()) {
-        try {
-          auto name = conn.get_atom_name(mon.name).name();
-          monitors.emplace_back(make_monitor(XCB_NONE, move(name), mon.width, mon.height, mon.x, mon.y, mon.primary));
-        } catch (const exception&) {
-          // silently ignore output
-        }
-      }
-    }
-#endif
     auto primary_output = conn.get_output_primary(root).output();
     string primary_name{};
 
@@ -121,17 +102,6 @@ namespace randr_util {
 
         auto name_iter = info.name();
         string name{name_iter.begin(), name_iter.end()};
-
-#if WITH_XRANDR_MONITORS
-        if (check_monitor_support()) {
-          auto mon = std::find_if(
-              monitors.begin(), monitors.end(), [&name](const monitor_t& mon) { return mon->name == name; });
-          if (mon != monitors.end()) {
-            (*mon)->output = output;
-            continue;
-          }
-        }
-#endif
 
         auto crtc = conn.get_crtc_info(info->crtc);
         auto primary = (primary_name == name);
@@ -156,8 +126,6 @@ namespace randr_util {
       // Test if there are any clones in the set
       for (auto& monitor : monitors) {
         if ((*m) == monitor || monitor->w == 0) {
-          continue;
-        } else if (check_monitor_support() && (monitor->output == XCB_NONE || (*m)->output == XCB_NONE)) {
           continue;
         }
 
