@@ -107,6 +107,7 @@ namespace modules {
     virtual bool running() const = 0;
 
     virtual void start() = 0;
+    virtual void join() = 0;
     virtual void stop() = 0;
     virtual void halt(string error_message) = 0;
     virtual string contents() = 0;
@@ -123,6 +124,7 @@ namespace modules {
 
     string name() const;
     bool running() const;
+    void join() final;
     void stop();
     void halt(string error_message);
     void teardown();

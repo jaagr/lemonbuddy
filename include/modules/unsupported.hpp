@@ -25,6 +25,7 @@ namespace modules {
     }                                                                                   \
     void start() {}                                                                     \
     void stop() {}                                                                      \
+    void join() {}                                                                      \
     void halt(string) {}                                                                \
     string contents() {                                                                 \
       return "";                                                                        \
@@ -52,6 +53,6 @@ namespace modules {
 #if not ENABLE_XKEYBOARD
   DEFINE_UNSUPPORTED_MODULE(xkeyboard_module, "internal/xkeyboard");
 #endif
-}
+}  // namespace modules
 
 POLYBAR_NS_END
