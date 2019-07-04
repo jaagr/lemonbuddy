@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdlib>
 #include <atomic>
+#include <cstdlib>
 #include <mutex>
 
 #include "common.hpp"
@@ -9,8 +9,9 @@
 #include "errors.hpp"
 #include "events/signal_fwd.hpp"
 #include "events/signal_receiver.hpp"
-#include "utils/math.hpp"
 #include "settings.hpp"
+#include "utils/math.hpp"
+#include "utils/unit.hpp"
 #include "x11/types.hpp"
 #include "x11/window.hpp"
 
@@ -28,26 +29,16 @@ class tray_manager;
 // }}}
 
 /**
- * Allows a new format for pixel sizes (like width in the bar section)
- *
- * The new format is X%:Z, where X is in [0, 100], and Z is any real value
- * describing a pixel offset. The actual value is calculated by X% * max + Z
+ * Converts geometry format into pixel.
  */
-inline double geom_format_to_pixels(std::string str, double max) {
-  size_t i;
-  if ((i = str.find(':')) != std::string::npos) {
-    std::string a = str.substr(0, i - 1);
-    std::string b = str.substr(i + 1);
-    return math_util::max<double>(0,math_util::percentage_to_value<double>(strtod(a.c_str(), nullptr), max) + strtod(b.c_str(), nullptr));
-  } else {
-    if (str.find('%') != std::string::npos) {
-      return math_util::percentage_to_value<double>(strtod(str.c_str(), nullptr), max);
-    } else {
-      return strtod(str.c_str(), nullptr);
-    }
-  }
+inline unsigned int geom_format_to_pixels(geometry_format_values g_format, double max, double dpi) {
+  auto offset_pixel = unit_utils::geometry_to_pixel(g_format.offset, dpi);
+
+  return static_cast<unsigned int>(math_util::max<double>(
+      0, math_util::percentage_to_value<double, double>(g_format.percentage, max) + offset_pixel));
 }
 
+// clang-format off
 class bar : public xpp::event::sink<evt::button_press, evt::expose, evt::property_notify, evt::enter_notify,
                 evt::leave_notify, evt::motion_notify, evt::destroy_notify, evt::client_message, evt::configure_notify>,
             public signal_receiver<SIGN_PRIORITY_BAR, signals::eventqueue::start, signals::ui::tick,
@@ -57,6 +48,7 @@ class bar : public xpp::event::sink<evt::button_press, evt::expose, evt::propert
 #endif
 		> {
  public:
+  // clang-format on
   using make_type = unique_ptr<bar>;
   static make_type make(bool only_initialize_values = false);
 

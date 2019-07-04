@@ -1,4 +1,5 @@
 #include "components/renderer.hpp"
+
 #include "cairo/context.hpp"
 #include "components/config.hpp"
 #include "events/signal.hpp"
@@ -6,6 +7,7 @@
 #include "utils/factory.hpp"
 #include "utils/file.hpp"
 #include "utils/math.hpp"
+#include "utils/unit.hpp"
 #include "x11/atoms.hpp"
 #include "x11/background_manager.hpp"
 #include "x11/connection.hpp"
@@ -34,15 +36,14 @@ renderer::make_type renderer::make(const bar_settings& bar) {
 /**
  * Construct renderer instance
  */
-renderer::renderer(
-    connection& conn, signal_emitter& sig, const config& conf, const logger& logger, const bar_settings& bar, background_manager& background)
+renderer::renderer(connection& conn, signal_emitter& sig, const config& conf, const logger& logger,
+    const bar_settings& bar, background_manager& background)
     : m_connection(conn)
     , m_sig(sig)
     , m_conf(conf)
     , m_log(logger)
     , m_bar(forward<const bar_settings&>(bar))
     , m_rect(m_bar.inner_area()) {
-
   m_sig.attach(this);
   m_log.trace("renderer: Get TrueColor visual");
   {
@@ -107,9 +108,9 @@ renderer::renderer(
 
   m_log.trace("renderer: Allocate alignment blocks");
   {
-    m_blocks.emplace(alignment::LEFT, alignment_block{nullptr, 0.0, 0.0});
-    m_blocks.emplace(alignment::CENTER, alignment_block{nullptr, 0.0, 0.0});
-    m_blocks.emplace(alignment::RIGHT, alignment_block{nullptr, 0.0, 0.0});
+    m_blocks.emplace(alignment::LEFT, alignment_block{nullptr, 0.0, 0.0, 0.});
+    m_blocks.emplace(alignment::CENTER, alignment_block{nullptr, 0.0, 0.0, 0.});
+    m_blocks.emplace(alignment::RIGHT, alignment_block{nullptr, 0.0, 0.0, 0.});
   }
 
   m_log.trace("renderer: Allocate cairo components");
@@ -120,31 +121,6 @@ renderer::renderer(
 
   m_log.trace("renderer: Load fonts");
   {
-    double dpi_x = 96, dpi_y = 96;
-    if (m_conf.has(m_conf.section(), "dpi")) {
-      dpi_x = dpi_y = m_conf.get<double>("dpi");
-    } else {
-      if (m_conf.has(m_conf.section(), "dpi-x")) {
-        dpi_x = m_conf.get<double>("dpi-x");
-      }
-      if (m_conf.has(m_conf.section(), "dpi-y")) {
-        dpi_y = m_conf.get<double>("dpi-y");
-      }
-    }
-
-    // dpi to be comptued
-    if (dpi_x <= 0 || dpi_y <= 0) {
-      auto screen = m_connection.screen();
-      if (dpi_x <= 0) {
-        dpi_x = screen->width_in_pixels * 25.4 / screen->width_in_millimeters;
-      }
-      if (dpi_y <= 0) {
-        dpi_y = screen->height_in_pixels * 25.4 / screen->height_in_millimeters;
-      }
-    }
-
-    m_log.info("Configured DPI = %gx%g", dpi_x, dpi_y);
-
     auto fonts = m_conf.get_list<string>(m_conf.section(), "font", {});
     if (fonts.empty()) {
       m_log.warn("No fonts specified, using fallback font \"fixed\"");
@@ -159,7 +135,7 @@ renderer::renderer(
         offset = std::strtol(pattern.substr(pos + 1).c_str(), nullptr, 10);
         pattern.erase(pos);
       }
-      auto font = cairo::make_font(*m_context, string{pattern}, offset, dpi_x, dpi_y);
+      auto font = cairo::make_font(*m_context, string{pattern}, offset, m_bar.dpi_x, m_bar.dpi_y);
       m_log.info("Loaded font \"%s\" (name=%s, offset=%i, file=%s)", pattern, font->name(), offset, font->file());
       *m_context << move(font);
     }
@@ -300,13 +276,12 @@ void renderer::end() {
     fill_background();
   }
 
-
   // For pseudo-transparency, capture the contents of the rendered bar and
   // composite it against the desktop wallpaper. This way transparent parts of
   // the bar will be filled by the wallpaper creating illusion of transparency.
   if (m_pseudo_transparency) {
     cairo_pattern_t* barcontents{};
-    m_context->pop(&barcontents); // corresponding push is in renderer::begin
+    m_context->pop(&barcontents);  // corresponding push is in renderer::begin
 
     auto root_bg = m_background->get_surface();
     if (root_bg != nullptr) {
@@ -448,7 +423,7 @@ double renderer::block_x(alignment a) const {
        * So we can just subtract the tray_width = m_rect.x - border_left from the base_pos to correct for the tray being
        * placed on the left
        */
-      if(m_rect.x > border_left) {
+      if (m_rect.x > border_left) {
         base_pos -= m_rect.x - border_left;
       }
 
@@ -479,7 +454,7 @@ double renderer::block_y(alignment) const {
  * Get block width for given alignment
  */
 double renderer::block_w(alignment a) const {
-  return m_blocks.at(a).x;
+  return m_blocks.at(a).width;
 }
 
 /**
@@ -657,9 +632,25 @@ void renderer::draw_text(const string& contents) {
   m_context->restore();
 
   double dx = m_rect.x + m_blocks[m_align].x - origin.x;
-  if (dx > 0.0) {
+  // We need to verify that the need cursor is at a position which is bigger than the previous one
+  // This verification is needed because of negative offset.
+  if (dx > 0.0 && m_blocks[m_align].x > m_blocks[m_align].width) {
+    m_blocks[m_align].width += dx;
     fill_underline(origin.x, dx);
     fill_overline(origin.x, dx);
+  }
+}
+
+void renderer::draw_offset(double x, double w) {
+  if (w > 0. && m_bg != m_bar.background) {
+    m_log.trace_x("renderer: offset(x=%f, w=%f)", x, w);
+    m_context->save();
+    *m_context << m_comp_bg;
+    *m_context << m_bg;
+    *m_context << cairo::rect{
+        m_rect.x + x, static_cast<double>(m_rect.y), w, static_cast<double>(m_rect.y + m_rect.height)};
+    m_context->fill();
+    m_context->restore();
   }
 }
 
@@ -751,6 +742,7 @@ bool renderer::on(const signals::parser::change_alignment& evt) {
     m_align = align;
     m_blocks[m_align].x = 0.0;
     m_blocks[m_align].y = 0.0;
+    m_blocks[m_align].width = 0.;
     m_context->push();
     m_log.trace_x("renderer: push(%i)", static_cast<int>(m_align));
 
@@ -767,9 +759,17 @@ bool renderer::on(const signals::parser::reverse_colors&) {
   return true;
 }
 
-bool renderer::on(const signals::parser::offset_pixel& evt) {
-  m_log.trace_x("renderer: offset_pixel(%f)", evt.cast());
-  m_blocks[m_align].x += evt.cast();
+bool renderer::on(const signals::parser::offset& evt) {
+  m_log.trace_x("renderer: offset(%f)", evt.cast());
+
+  auto offset_width = unit_utils::geometry_to_pixel(evt.cast(), m_bar.dpi_x);
+  draw_offset(m_blocks[m_align].x, offset_width);
+  m_blocks[m_align].x += offset_width;
+
+  if (offset_width > 0) {
+    m_blocks[m_align].width += offset_width;
+  }
+
   return true;
 }
 
@@ -813,7 +813,7 @@ bool renderer::on(const signals::parser::action_end& evt) {
   m_log.trace_x("renderer: action_end(btn=%i)", static_cast<int>(btn));
   for (auto action = m_actions.rbegin(); action != m_actions.rend(); action++) {
     if (action->active && action->align == m_align && action->button == btn) {
-      action->end_x = m_blocks.at(action->align).x;
+      action->end_x = m_blocks.at(action->align).width;
       action->active = false;
       break;
     }
