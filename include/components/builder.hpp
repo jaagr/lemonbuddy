@@ -28,8 +28,8 @@ class builder {
   void node(const label_t& label, bool add_space = false);
   void node_repeat(const string& str, size_t n, bool add_space = false);
   void node_repeat(const label_t& label, size_t n, bool add_space = false);
-  void offset(int pixels = 0);
-  void space(size_t width);
+  void offset(geometry pixels = GEOMETRY_ZERO_PIXEL);
+  void space(space_size size);
   void space();
   void remove_trailing_space(size_t len);
   void remove_trailing_space();
@@ -55,6 +55,7 @@ class builder {
   void cmd(mousebtn index, string action, const label_t& label);
   void cmd_close(bool condition = true);
 
+  static string add_surrounding_tag(const space_size& space);
  protected:
   string background_hex();
   string foreground_hex();
