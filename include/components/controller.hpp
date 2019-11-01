@@ -137,7 +137,7 @@ class controller
   /**
    * \brief Time of last handled input event
    */
-  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> m_lastinput;
+  std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> m_lastinput;
 
   /**
    * \brief Input data
