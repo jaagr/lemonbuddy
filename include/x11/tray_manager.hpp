@@ -58,10 +58,21 @@ struct tray_settings {
   unsigned int height{0U};
   unsigned int height_fill{0U};
   unsigned int spacing{0U};
-  unsigned int sibling{0U};
+  xcb_window_t bar{XCB_NONE};
   unsigned int background{0U};
   bool transparent{false};
   bool detached{false};
+
+  /**
+   * Allows users to turn off reparenting in favor of being able to use the
+   * offsets without restrictions.
+   *
+   * If the bar window is reparented by the WM under a window that has the
+   * exact same size as the bar (openbox does this), if the tray is also
+   * reparented, it is not possible to move the tray outside of the bounds of
+   * the bar window.
+   */
+  bool reparent{true};
 };
 
 class tray_manager
@@ -137,6 +148,8 @@ class tray_manager
   bool on(const signals::ui::update_background& evt);
 
  private:
+  void reparent_window();
+
   connection& m_connection;
   signal_emitter& m_sig;
   const logger& m_log;
