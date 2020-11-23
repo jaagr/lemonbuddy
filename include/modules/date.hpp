@@ -3,9 +3,8 @@
 #include "modules/meta/input_handler.hpp"
 #include "modules/meta/timer_module.hpp"
 
-#include <iostream>
-#include <iomanip>
-#include <ctime>
+#include <atomic>
+#include <sstream>
 
 POLYBAR_NS
 
@@ -16,23 +15,30 @@ namespace modules {
 
     bool update();
     bool build(builder* builder, const string& tag) const;
+    string get_format() const;
 
    protected:
     bool input(string&& cmd);
 
    private:
+    static constexpr auto FORMAT_ALT = "format-alt";
+
     static constexpr auto TAG_LABEL = "<label>";
+    static constexpr auto TAG_LABEL_ALT = "<label-alt>";
     static constexpr auto EVENT_TOGGLE = "datetoggle";
 
     // \deprecated: Use <label>
     static constexpr auto TAG_DATE = "<date>";
 
     label_t m_label;
+    label_t m_label_alt;
 
     string m_dateformat;
     string m_dateformat_alt;
     string m_timeformat;
     string m_timeformat_alt;
+    string m_timezone;
+    string m_timezone_alt;
 
     string m_date;
     string m_time;
@@ -42,6 +48,6 @@ namespace modules {
 
     std::atomic<bool> m_toggled{false};
   };
-}
+}  // namespace modules
 
 POLYBAR_NS_END
