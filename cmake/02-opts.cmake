@@ -35,6 +35,7 @@ option(BUILD_DOC "Build documentation" ON)
 
 option(ENABLE_ALSA "Enable alsa support" ON)
 option(ENABLE_CURL "Enable curl support" ON)
+option(ENABLE_DWM "Enable dwm support" ON)
 option(ENABLE_I3 "Enable i3 support" ON)
 option(ENABLE_MPD "Enable mpd support" ON)
 option(WITH_LIBNL "Use netlink interface for wireless" ON)

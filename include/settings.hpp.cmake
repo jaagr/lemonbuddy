@@ -12,6 +12,7 @@ extern const char* const APP_VERSION;
 #cmakedefine01 ENABLE_NETWORK
 #cmakedefine01 WITH_LIBNL
 #cmakedefine01 ENABLE_I3
+#cmakedefine01 ENABLE_DWM
 #cmakedefine01 ENABLE_CURL
 #cmakedefine01 ENABLE_PULSEAUDIO
 
