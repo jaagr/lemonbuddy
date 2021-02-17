@@ -48,6 +48,8 @@ endif()
 find_package(Threads REQUIRED)
 find_package(CairoFC REQUIRED)
 
+find_package(LibUV 1.8.0 REQUIRED)
+
 if (ENABLE_ALSA)
   find_package(ALSA REQUIRED)
   set(ALSA_VERSION ${ALSA_VERSION_STRING})
@@ -99,8 +101,6 @@ endif()
 # Randr is required. Searches for randr only because we may do a version check
 find_package(Xcb ${XRANDR_VERSION} REQUIRED COMPONENTS RANDR)
 find_package(Xcb REQUIRED COMPONENTS ${XORG_EXTENSIONS})
-
-find_package(LibUV 1.10.0 REQUIRED)
 
 # FreeBSD Support
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
