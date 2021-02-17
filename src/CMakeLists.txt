@@ -151,6 +151,7 @@ if(BUILD_LIBPOLY)
     Cairo::CairoFC
     moodycamel
     xpp
+    LibUV::LibUV
     $<$<TARGET_EXISTS:i3ipc++>:i3ipc++>
     $<$<TARGET_EXISTS:ALSA::ALSA>:ALSA::ALSA>
     $<$<TARGET_EXISTS:CURL::libcurl>:CURL::libcurl>

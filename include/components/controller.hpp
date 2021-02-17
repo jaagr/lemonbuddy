@@ -52,6 +52,9 @@ class controller
   bool enqueue(event&& evt);
   bool enqueue(string&& input_data);
 
+  void conn_cb(int status, int events);
+  void ipc_cb(int status, int events);
+
  protected:
   void read_events();
   void process_eventqueue();
@@ -85,8 +88,6 @@ class controller
   unique_ptr<bar> m_bar;
   unique_ptr<ipc> m_ipc;
   unique_ptr<inotify_watch> m_confwatch;
-
-  array<unique_ptr<file_descriptor>, 2> m_queuefd{};
 
   /**
    * \brief State flag
