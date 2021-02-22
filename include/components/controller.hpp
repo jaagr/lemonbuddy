@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "common.hpp"
+#include "components/eventloop.hpp"
 #include "components/types.hpp"
 #include "events/signal_fwd.hpp"
 #include "events/signal_receiver.hpp"
@@ -52,6 +53,11 @@ class controller
   bool enqueue(event&& evt);
   bool enqueue(string&& input_data);
 
+  void signal_handler(int signum);
+
+  void conn_cb(int status, int events);
+  void ipc_cb(string buf);
+
  protected:
   void read_events();
   void process_eventqueue();
@@ -86,7 +92,7 @@ class controller
   unique_ptr<ipc> m_ipc;
   unique_ptr<inotify_watch> m_confwatch;
 
-  array<unique_ptr<file_descriptor>, 2> m_queuefd{};
+  eventloop eloop;
 
   /**
    * \brief State flag

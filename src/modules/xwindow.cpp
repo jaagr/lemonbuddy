@@ -1,10 +1,10 @@
 #include "modules/xwindow.hpp"
+
 #include "drawtypes/label.hpp"
+#include "modules/meta/base.inl"
 #include "utils/factory.hpp"
 #include "x11/atoms.hpp"
 #include "x11/connection.hpp"
-
-#include "modules/meta/base.inl"
 
 POLYBAR_NS
 
@@ -86,6 +86,7 @@ namespace modules {
    * Handler for XCB_PROPERTY_NOTIFY events
    */
   void xwindow_module::handle(const evt::property_notify& evt) {
+    m_log.notice("%s: handle Thread id: %i", name(), concurrency_util::thread_id(this_thread::get_id()));
     if (evt->atom == _NET_ACTIVE_WINDOW) {
       update(true);
     } else if (evt->atom == _NET_CURRENT_DESKTOP) {
@@ -138,6 +139,6 @@ namespace modules {
     }
     return false;
   }
-}
+}  // namespace modules
 
 POLYBAR_NS_END
