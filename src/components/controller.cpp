@@ -204,10 +204,14 @@ static void conn_cb_wrapper(uv_poll_t* handle, int status, int events) {
   static_cast<controller*>(handle->data)->conn_cb(status, events);
 }
 
-static void signal_cb_wrapper(uv_signal_t* handle, int signum) {
+void controller::signal_handler(int signum) {
   g_terminate = 1;
   g_reload = (signum == SIGUSR1);
-  static_cast<eventloop*>(handle->loop->data)->stop();
+  eloop.stop();
+}
+
+static void signal_cb_wrapper(uv_signal_t* handle, int signum) {
+  static_cast<controller*>(handle->data)->signal_handler(signum);
 }
 
 static void confwatch_cb_wrapper(uv_fs_event_t* handle, const char* fname, int, int) {
@@ -260,6 +264,7 @@ void controller::read_events() {
   std::vector<unique_ptr<uv_signal_t>> handles;
 
   for (auto s : {SIGINT, SIGQUIT, SIGTERM, SIGUSR1, SIGALRM}) {
+    eloop.signal_handler(s, [this](int signum) { signal_handler(signum); });
     auto signal_handle = std::make_unique<uv_signal_t>();
     uv_signal_init(loop, signal_handle.get());
     signal_handle->data = this;
