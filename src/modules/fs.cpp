@@ -1,15 +1,16 @@
+#include "modules/fs.hpp"
+
 #include <sys/statvfs.h>
+
 #include <fstream>
 
 #include "drawtypes/label.hpp"
 #include "drawtypes/progressbar.hpp"
 #include "drawtypes/ramp.hpp"
-#include "modules/fs.hpp"
+#include "modules/meta/base.inl"
 #include "utils/factory.hpp"
 #include "utils/math.hpp"
 #include "utils/string.hpp"
-
-#include "modules/meta/base.inl"
 
 POLYBAR_NS
 
@@ -137,7 +138,7 @@ namespace modules {
 
     for (m_index = 0_z; m_index < m_mounts.size(); ++m_index) {
       if (!output.empty()) {
-        m_builder->space(m_spacing);
+        m_builder->spacing(m_spacing);
       }
       output += timer_module::get_output();
     }
