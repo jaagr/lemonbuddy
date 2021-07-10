@@ -3,6 +3,7 @@
 #include "common.hpp"
 #include "components/types.hpp"
 #include "utils/color.hpp"
+#include "utils/unit.hpp"
 
 POLYBAR_NS
 
@@ -89,7 +90,7 @@ namespace tags {
       /**
        * For for 'O' tags
        */
-      int offset;
+      extent_val offset;
       /**
        * For for 'P' tags
        */

@@ -27,11 +27,10 @@ class builder {
   void node(const label_t& label);
   void node_repeat(const string& str, size_t n);
   void node_repeat(const label_t& label, size_t n);
-  void offset(int pixels);
-  void space(size_t width);
-  void space();
+  void offset(extent_val pixels = ZERO_PX_EXTENT);
+  void spacing(spacing_val size);
+  void spacing();
   void remove_trailing_space(size_t len);
-  void remove_trailing_space();
   void font(int index);
   void font_close();
   void background(rgba color);
@@ -54,6 +53,8 @@ class builder {
   void action(mousebtn index, string action, const label_t& label);
   void action(mousebtn btn, const modules::module_interface& module, string action, string data, const label_t& label);
   void action_close();
+
+  static string get_spacing_format_string(const spacing_val& space);
 
  protected:
   void tag_open(tags::syntaxtag tag, const string& value);

@@ -184,7 +184,7 @@ namespace modules {
     bool no_tag_built{true};
     bool fake_no_tag_built{false};
     bool tag_built{false};
-    auto mingap = std::max(1_z, format->spacing);
+    auto mingap = std::max(1.f, format->spacing.value);
     size_t start, end;
     string value{format->value};
     while ((start = value.find('<')) != string::npos && (end = value.find('>', start)) != string::npos) {
@@ -210,7 +210,7 @@ namespace modules {
         continue;
       } else if (tag[0] == '<' && tag[tag.size() - 1] == '>') {
         if (!no_tag_built)
-          m_builder->space(format->spacing);
+          m_builder->spacing(format->spacing);
         else if (fake_no_tag_built)
           no_tag_built = false;
         if (!(tag_built = CONST_MOD(Impl).build(m_builder.get(), tag)) && !no_tag_built)
