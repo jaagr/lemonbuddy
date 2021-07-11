@@ -36,6 +36,7 @@ namespace modules {
     m_show_urgent = m_conf.get(name(), "show-urgent", m_show_urgent);
     m_strip_wsnumbers = m_conf.get(name(), "strip-wsnumbers", m_strip_wsnumbers);
     m_fuzzy_match = m_conf.get(name(), "fuzzy-match", m_fuzzy_match);
+    m_output = m_conf.get(name(), "output", m_output);
 
     m_conf.warn_deprecated(name(), "wsname-maxlen", "%name:min:max%");
 
@@ -135,7 +136,7 @@ namespace modules {
       if (m_pinworkspaces) {
         workspaces = i3_util::workspaces(ipc, m_bar.monitor->name, m_show_urgent);
       } else {
-        workspaces = i3_util::workspaces(ipc);
+        workspaces = i3_util::workspaces(ipc, m_output);
       }
 
       if (m_indexsort) {
