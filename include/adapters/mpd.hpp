@@ -91,7 +91,9 @@ namespace mpd {
 
     int get_fd();
     void idle();
-    int noidle();
+    bool noidle();
+    int recv_idle();
+    int try_recv_idle(int timeout);
 
     unique_ptr<mpdstatus> get_status();
     unique_ptr<mpdstatus> get_status_safe();

@@ -152,22 +152,14 @@ namespace modules {
 
   void mpd_module::idle() {
     if (connected()) {
-      m_quick_attempts = 0;
+      m_connect_attempts = 0;
       sleep(80ms);
     } else {
-      sleep(m_quick_attempts++ < 5 ? 0.5s : 2s);
+      sleep(++m_connect_attempts < 10 ? m_connect_attempts * 0.5s : 5s);
     }
   }
 
   bool mpd_module::has_event() {
-    bool def = false;
-
-    if (!connected() && m_statebroadcasted == mpd::connection_state::CONNECTED) {
-      def = true;
-    } else if (connected() && m_statebroadcasted == mpd::connection_state::DISCONNECTED) {
-      def = true;
-    }
-
     try {
       if (!m_mpd) {
         m_mpd = factory_util::unique<mpdconnection>(m_log, m_host, m_port, m_pass);
@@ -178,22 +170,31 @@ namespace modules {
     } catch (const mpd_exception& err) {
       m_log.err("%s: %s", name(), err.what());
       m_mpd.reset();
-      return def;
+      return true;
     }
 
-    if (!connected()) {
-      return def;
+    if (!connected() || m_statebroadcasted != mpd::connection_state::CONNECTED) {
+      return true;
     }
 
     if (!m_status) {
       m_status = m_mpd->get_status_safe();
     }
 
+    bool track_time = (m_label_time || m_bar_progress) && m_status->match_state(mpdstate::PLAYING);
     try {
       m_mpd->idle();
 
-      int idle_flags = 0;
-      if ((idle_flags = m_mpd->noidle()) != 0) {
+      int idle_flags;
+
+      if (track_time) {
+        m_mpd->noidle();
+        idle_flags = m_mpd->recv_idle();
+      } else {
+        idle_flags = m_mpd->try_recv_idle(2000);
+      }
+
+      if (idle_flags != 0) {
         // Update status on every event
         m_status->update(idle_flags, m_mpd.get());
         return true;
@@ -201,10 +202,10 @@ namespace modules {
     } catch (const mpd_exception& err) {
       m_log.err("%s: %s", name(), err.what());
       m_mpd.reset();
-      return def;
+      return false;
     }
 
-    if ((m_label_time || m_bar_progress) && m_status->match_state(mpdstate::PLAYING)) {
+    if (track_time) {
       auto now = chrono::system_clock::now();
       auto diff = now - m_lastsync;
 
@@ -214,7 +215,7 @@ namespace modules {
       }
     }
 
-    return def;
+    return false;
   }
 
   bool mpd_module::update() {

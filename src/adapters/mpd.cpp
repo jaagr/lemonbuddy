@@ -1,3 +1,5 @@
+#include <poll.h>
+
 #include <cassert>
 #include <csignal>
 #include <thread>
@@ -195,22 +197,45 @@ namespace mpd {
   void mpdconnection::idle() {
     check_connection(m_connection.get());
     if (!m_idle) {
-      mpd_send_idle(m_connection.get());
+      mpd_send_idle_mask(m_connection.get(), (mpd_idle)(MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS));
       check_errors(m_connection.get());
       m_idle = true;
     }
   }
 
-  int mpdconnection::noidle() {
+  bool mpdconnection::noidle() {
+    check_connection(m_connection.get());
+    bool success = true;
+    if (m_idle) {
+      success = mpd_send_noidle(m_connection.get());
+    }
+    return success;
+  }
+
+  int mpdconnection::recv_idle() {
     check_connection(m_connection.get());
     int flags = 0;
-    if (m_idle && mpd_send_noidle(m_connection.get())) {
-      m_idle = false;
+    if (m_idle) {
       flags = mpd_recv_idle(m_connection.get(), true);
+      m_idle = false;
       mpd_response_finish(m_connection.get());
       check_errors(m_connection.get());
     }
     return flags;
+  }
+
+  int mpdconnection::try_recv_idle(int timeout) {
+    struct pollfd pfd = {m_fd, POLLIN, 0};
+
+    int poll_ret = poll(&pfd, 1, timeout);
+
+    if (poll_ret > 0) {
+      return recv_idle();
+    } else if (poll_ret == 0) {
+      return 0;
+    } else {
+      throw mpd_exception("poll() returned error: "s + std::strerror(errno));
+    }
   }
 
   unique_ptr<mpdstatus> mpdconnection::get_status() {
